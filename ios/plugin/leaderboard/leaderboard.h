@@ -10,10 +10,8 @@
 
 #ifdef VERSION_4_0
 #include "core/object/object.h"
-#endif
-
-#ifdef VERSION_3_X
-#include "core/object.h"
+#else
+#include "core/object.h" // Fallback an toàn cho Godot 3.x nếu không có macro VERSION_4_0
 #endif
 
 class Leaderboard : public Object {
@@ -23,16 +21,16 @@ class Leaderboard : public Object {
     static Leaderboard *instance;
 
 public:
-    BOOL isAuthenticated();
+    // ĐÃ SỬA: Đổi từ BOOL (Objective-C) sang bool (C++ chuẩn) để tránh lỗi compiler
+    bool isAuthenticated(); 
+    
     void signIn();
     void fetchHighScore(const String &leaderboard_id);
     void submitHighScore(const String &leaderboard_id, const int &score);
     void show(const String &leaderboard_id);
 
-    
     void game_center_closed();
 
-    
     static Leaderboard *get_singleton();
     
     Leaderboard();

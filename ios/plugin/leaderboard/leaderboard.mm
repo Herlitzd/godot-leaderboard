@@ -1,10 +1,3 @@
-//
-//  leaderboard.m
-//  leaderboard
-//
-//  Created by Kyoz on 23/12/2024.
-//
-
 #import <Foundation/Foundation.h>
 #import <StoreKit/StoreKit.h>
 
@@ -24,7 +17,6 @@ GodotGameCenterDelegate *gameCenterDelegate = nil;
 Leaderboard::Leaderboard() {
     instance = this;
     gameCenterDelegate = [[GodotGameCenterDelegate alloc] init];
-
     NSLog(@"initialize leaderboard");
 }
 
@@ -32,11 +24,9 @@ Leaderboard::~Leaderboard() {
     if (instance == this) {
         instance = NULL;
     }
-    
     if (gameCenterDelegate) {
         gameCenterDelegate = nil;
     }
-    
     NSLog(@"deinitialize leaderboard");
 }
 
@@ -44,53 +34,64 @@ Leaderboard *Leaderboard::get_singleton() {
     return instance;
 };
 
-
 void Leaderboard::_bind_methods() {
     ADD_SIGNAL(MethodInfo("on_leaderboard_error", PropertyInfo(Variant::STRING, "error_code")));
     ADD_SIGNAL(MethodInfo("on_leaderboard_event", PropertyInfo(Variant::STRING, "event_code")));
     ADD_SIGNAL(MethodInfo("on_authenticated", PropertyInfo(Variant::BOOL, "is_authenticated")));
     ADD_SIGNAL(MethodInfo("on_high_score_fetched", PropertyInfo(Variant::INT, "highscore")));
 
-    
     ClassDB::bind_method("isAuthenticated", &Leaderboard::isAuthenticated);
     ClassDB::bind_method("signIn", &Leaderboard::signIn);
     ClassDB::bind_method("fetchHighScore", &Leaderboard::fetchHighScore);
     ClassDB::bind_method("submitHighScore", &Leaderboard::submitHighScore);
     ClassDB::bind_method("show", &Leaderboard::show);
-
 }
 
-
-BOOL Leaderboard::isAuthenticated() {
+bool Leaderboard::isAuthenticated() {
     GKLocalPlayer *localPlayer = [GKLocalPlayer localPlayer];
     return localPlayer.isAuthenticated;
 }
 
+// Hàm bổ trợ lấy rootViewController an toàn trên iOS 14+
+UIViewController* get_safe_root_controller() {
+    UIWindow *window = nil;
+    if (@available(iOS 13.0, *)) {
+        for (UIWindowScene *scene in [UIApplication sharedApplication].connectedScenes) {
+            if (scene.activationState == UISceneActivationStateForegroundActive) {
+                window = scene.windows.firstObject;
+                break;
+            }
+        }
+    }
+    if (!window) {
+        window = [UIApplication sharedApplication].keyWindow;
+    }
+    if (!window) {
+        window = [[UIApplication sharedApplication] delegate].window;
+    }
+    return window.rootViewController;
+}
 
 void Leaderboard::signIn() {
-    //if this class isn't available, game center isn't implemented
     if ((NSClassFromString(@"GKLocalPlayer")) == nil) {
-        emit_signal("on_leaderboard_error", "ERROR_INIT");
+        emit_signal("on_leaderboard_error", "ERROR_INIT_NO_CLASS");
         return;
     }
 
     GKLocalPlayer *player = [GKLocalPlayer localPlayer];
     if (![player respondsToSelector:@selector(authenticateHandler)]) {
-        emit_signal("on_leaderboard_error", "ERROR_INIT");
+        emit_signal("on_leaderboard_error", "ERROR_INIT_NO_SELECTOR");
         return;
     }
 
-    UIViewController *root_controller = [[UIApplication sharedApplication] delegate].window.rootViewController;
+    // Sử dụng hàm lấy root mới an toàn hơn
+    UIViewController *root_controller = get_safe_root_controller();
     
     if (!root_controller) {
-        emit_signal("on_leaderboard_error", "ERROR_INIT");
+        emit_signal("on_leaderboard_error", "ERROR_INIT_NO_ROOT");
         return;
     }
 
-    // This handler is called several times.  First when the view needs to be shown, then again
-    // after the view is cancelled or the user logs in.  Or if the user's already logged in, it's
-    // called just once to confirm they're authenticated.  This is why no result needs to be specified
-    // in the presentViewController phase. In this case, more calls to this function will follow.
     _weakify(root_controller);
     _weakify(player);
     player.authenticateHandler = (^(UIViewController *controller, NSError *error) {
@@ -104,26 +105,24 @@ void Leaderboard::signIn() {
                 emit_signal("on_authenticated", true);
             } else {
                 emit_signal("on_authenticated", false);
-            };
-        };
+            }
+        }
     });
-
 }
 
 void Leaderboard::fetchHighScore(const String &leaderboard_id) {
+    // Lưu ý: Đoạn này tạm giữ nguyên theo code cũ của bạn để chạy tạm, 
+    // nhưng khuyến khích cập nhật sang GKLeaderboard loadEntries nếu chạy iOS 14+ hoàn toàn.
     GKLeaderboard *leaderboard = [[GKLeaderboard alloc] init];
     leaderboard.identifier = [[NSString alloc] initWithUTF8String:leaderboard_id.utf8().get_data()];
     leaderboard.playerScope = GKLeaderboardPlayerScopeGlobal;
     leaderboard.timeScope = GKLeaderboardTimeScopeAllTime;
     
-    // First, try to load the local player's entry by loading scores around their rank
     [leaderboard loadScoresWithCompletionHandler:^(NSArray<GKScore *> *scores, NSError *error) {
         if (!error) {
-            // Get the local player's score from the localPlayerScore property
             if (leaderboard.localPlayerScore) {
                 emit_signal("on_high_score_fetched", leaderboard.localPlayerScore.value);
             } else {
-                // Local player has no score on this leaderboard
                 emit_signal("on_leaderboard_error", "PLAYER_NO_SCORE");
             }
         } else {
@@ -133,25 +132,35 @@ void Leaderboard::fetchHighScore(const String &leaderboard_id) {
 }
 
 void Leaderboard::submitHighScore(const String &leaderboard_id, const int &score) {
-    NSString *cat_str = [[NSString alloc] initWithUTF8String:leaderboard_id.utf8().get_data()];
-    GKScore *reporter = [[GKScore alloc] initWithLeaderboardIdentifier:cat_str];
-    reporter.value = score;
-
-    if ([GKScore respondsToSelector:@selector(reportScores)]) {
-        emit_signal("on_leaderboard_error", "ERROR_UNAVAILABLE");
-        return;
-    }
-
-    [GKScore reportScores:@[ reporter ]
-        withCompletionHandler:^(NSError *error) {
+    NSString *leaderboard_ns_id = [NSString stringWithUTF8String:leaderboard_id.utf8().get_data()];
+    
+    // Sử dụng API mới từ iOS 14+ để submit điểm thẳng vào Leaderboard ID
+    if (@available(iOS 14.0, *)) {
+        [GKLeaderboard submitScore:score
+                        context:0
+                         player:[GKLocalPlayer localPlayer]
+         leaderboardIDs:@[leaderboard_ns_id]
+              completionHandler:^(NSError * _Nullable error) {
             if (error == nil) {
                 emit_signal("on_leaderboard_event", "EVENT_SUBMIT_SCORE_OK");
             } else {
                 emit_signal("on_leaderboard_event", "EVENT_SUBMIT_SCORE_ERROR");
-            };
+            }
         }];
-}
+    } else {
+        // Fallback cho iOS cũ (Dưới iOS 14)
+        GKScore *reporter = [[GKScore alloc] initWithLeaderboardIdentifier:leaderboard_ns_id];
+        reporter.value = score;
 
+        [GKScore reportScores:@[ reporter ] withCompletionHandler:^(NSError *error) {
+            if (error == nil) {
+                emit_signal("on_leaderboard_event", "EVENT_SUBMIT_SCORE_OK");
+            } else {
+                emit_signal("on_leaderboard_event", "EVENT_SUBMIT_SCORE_ERROR");
+            }
+        }];
+    }
+}
 
 void Leaderboard::show(const String &leaderboard_id) {
     if (!NSProtocolFromString(@"GKGameCenterControllerDelegate")) {
@@ -159,11 +168,7 @@ void Leaderboard::show(const String &leaderboard_id) {
         return;
     }
 
-    GKGameCenterViewControllerState view_state = GKGameCenterViewControllerStateDefault;
-    view_state = GKGameCenterViewControllerStateLeaderboards;
-
     GKGameCenterViewController *controller = [[GKGameCenterViewController alloc] init];
-    
     if (!controller) {
         emit_signal("on_leaderboard_error", "ERROR_CANT_SHOW_LEADERBOARD");
         return;
@@ -172,8 +177,8 @@ void Leaderboard::show(const String &leaderboard_id) {
     controller.leaderboardIdentifier = [NSString stringWithUTF8String:leaderboard_id.ascii().get_data()];
     controller.leaderboardTimeScope = GKLeaderboardTimeScopeAllTime;
 
-    
-    UIViewController *root_controller = [[UIApplication sharedApplication] delegate].window.rootViewController;
+    // Sử dụng hàm lấy root mới an toàn hơn
+    UIViewController *root_controller = get_safe_root_controller();
     
     if (!root_controller) {
         emit_signal("on_leaderboard_error", "ERROR_CANT_SHOW_LEADERBOARD");
@@ -181,12 +186,11 @@ void Leaderboard::show(const String &leaderboard_id) {
     }
     
     controller.gameCenterDelegate = gameCenterDelegate;
-    controller.viewState = view_state;
+    controller.viewState = GKGameCenterViewControllerStateLeaderboards;
 
     [root_controller presentViewController:controller animated:YES completion:nil];
 }
 
-
 void Leaderboard::game_center_closed() {
-    
+    // Tùy biến xử lý khi đóng cửa sổ
 }
