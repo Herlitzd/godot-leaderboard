@@ -25,6 +25,7 @@ for version in "${BUILD_VERSIONS[@]}"; do
     mkdir -p ios/bin
     rm -rf ios/godot
     mkdir -p ios/godot
+    find ios/plugin -name "*.o" -o -name "*.d" | xargs rm -f
 
     echo ">> Preparing extracted header template..."
     HEADER_FILE=$(get_ios_template_file_name $version)

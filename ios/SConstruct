@@ -150,11 +150,11 @@ elif env['version'] == '4.0':
     else:
         env.Prepend(CXXFLAGS=[
             '-O2', '-ftree-vectorize',
-            '-DNDEBUG', '-DNS_BLOCK_ASSERTIONS=1',
+            '-DNDEBUG', '-DNS_BLOCK_ASSERTIONS=1', '-DDEBUG_ENABLED',
         ])
 
         if env['arch'] != 'armv7':
-            env.Prepend(CXXFLAGS=['-fomit-frame-pointer'])            
+            env.Prepend(CXXFLAGS=['-fomit-frame-pointer'])
 else:
     print("No valid version to set flags for.")
     quit();

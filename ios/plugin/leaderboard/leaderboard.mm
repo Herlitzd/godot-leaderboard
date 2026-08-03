@@ -92,18 +92,18 @@ void Leaderboard::_bind_methods() {
     ADD_SIGNAL(MethodInfo("on_activity_started", PropertyInfo(Variant::STRING, "activity_id"), PropertyInfo(Variant::STRING, "party_code")));
     ADD_SIGNAL(MethodInfo("on_activity_error", PropertyInfo(Variant::STRING, "error_code")));
 
-    ClassDB::bind_method("isAuthenticated", &Leaderboard::isAuthenticated);
-    ClassDB::bind_method("signIn", &Leaderboard::signIn);
-    ClassDB::bind_method("fetchHighScore", &Leaderboard::fetchHighScore);
-    ClassDB::bind_method("submitHighScore", &Leaderboard::submitHighScore);
-    ClassDB::bind_method("show", &Leaderboard::show);
-    ClassDB::bind_method("loadActivities", &Leaderboard::load_activities);
-    ClassDB::bind_method("startActivity", &Leaderboard::start_activity);
-    ClassDB::bind_method("startActivityWithCode", &Leaderboard::start_activity_with_code);
-    ClassDB::bind_method("endActivity", &Leaderboard::end_activity);
-    ClassDB::bind_method("pauseActivity", &Leaderboard::pause_activity);
-    ClassDB::bind_method("resumeActivity", &Leaderboard::resume_activity);
-    ClassDB::bind_method("getActivityPartyCode", &Leaderboard::get_activity_party_code);
+    ClassDB::bind_method(D_METHOD("isAuthenticated"), &Leaderboard::isAuthenticated);
+    ClassDB::bind_method(D_METHOD("signIn"), &Leaderboard::signIn);
+    ClassDB::bind_method(D_METHOD("fetchHighScore", "leaderboard_id"), &Leaderboard::fetchHighScore);
+    ClassDB::bind_method(D_METHOD("submitHighScore", "leaderboard_id", "score"), &Leaderboard::submitHighScore);
+    ClassDB::bind_method(D_METHOD("show", "leaderboard_id"), &Leaderboard::show);
+    ClassDB::bind_method(D_METHOD("loadActivities"), &Leaderboard::load_activities);
+    ClassDB::bind_method(D_METHOD("startActivity", "activity_id"), &Leaderboard::start_activity);
+    ClassDB::bind_method(D_METHOD("startActivityWithCode", "activity_id", "party_code"), &Leaderboard::start_activity_with_code);
+    ClassDB::bind_method(D_METHOD("endActivity"), &Leaderboard::end_activity);
+    ClassDB::bind_method(D_METHOD("pauseActivity"), &Leaderboard::pause_activity);
+    ClassDB::bind_method(D_METHOD("resumeActivity"), &Leaderboard::resume_activity);
+    ClassDB::bind_method(D_METHOD("getActivityPartyCode"), &Leaderboard::get_activity_party_code);
 }
 
 bool Leaderboard::isAuthenticated() {

@@ -43,12 +43,21 @@ lipo -create \
     "./bin/lib${PLUGIN}.x86_64-simulator.${TARGET}.a" \
     -output "./bin/${PLUGIN}.simulator.${TARGET}.a"
 
+# Stage slices with a consistent basename so xcodebuild embeds "leaderboard.a"
+# as the BinaryPath inside each xcframework slice (not "leaderboard.device.release.a")
+rm -rf "./bin/xcf_stage_device_${TARGET}" "./bin/xcf_stage_sim_${TARGET}"
+mkdir -p "./bin/xcf_stage_device_${TARGET}" "./bin/xcf_stage_sim_${TARGET}"
+cp "./bin/${PLUGIN}.device.${TARGET}.a"    "./bin/xcf_stage_device_${TARGET}/${PLUGIN}.a"
+cp "./bin/${PLUGIN}.simulator.${TARGET}.a" "./bin/xcf_stage_sim_${TARGET}/${PLUGIN}.a"
+
 # XCFramework — bundles device and simulator with correct platform tags
 # so Xcode can link the right slice without conflict
 rm -rf "./bin/${PLUGIN}.${TARGET}.xcframework"
 xcodebuild -create-xcframework \
-    -library "./bin/${PLUGIN}.device.${TARGET}.a" \
-    -library "./bin/${PLUGIN}.simulator.${TARGET}.a" \
+    -library "./bin/xcf_stage_device_${TARGET}/${PLUGIN}.a" \
+    -library "./bin/xcf_stage_sim_${TARGET}/${PLUGIN}.a" \
     -output "./bin/${PLUGIN}.${TARGET}.xcframework"
+
+rm -rf "./bin/xcf_stage_device_${TARGET}" "./bin/xcf_stage_sim_${TARGET}"
 
 cd ..
