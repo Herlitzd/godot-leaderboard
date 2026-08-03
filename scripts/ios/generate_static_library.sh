@@ -3,29 +3,52 @@ set -e
 
 cd ios
 
-# Compile static libraries
+PLUGIN=$1
+TARGET=$2
+VERSION=$3
 
-# ARM64 Device
-scons target=$2 arch=arm64 plugin=$1 version=$3
-# ARM7 Device
-scons target=$2 arch=armv7 plugin=$1 version=$3
-# x86_64 Simulator
-scons target=$2 arch=x86_64 simulator=yes plugin=$1 version=$3
-
-# Creating a fat libraries for device and simulator
-# lib<plugin>.<arch>-<simulator|ios>.<release|debug|release_debug>.a
-
-if [[ "$3" == "3.x" ]];
-then
-    lipo -create "./bin/lib$1.x86_64-simulator.$2.a" \
-        "./bin/lib$1.armv7-iphone.$2.a" \
-        "./bin/lib$1.arm64-iphone.$2.a" \
-        -output "./bin/$1.$2.a"
+# lib<plugin>.<arch>-<simulator|ios>.<target>.a
+if [[ "$VERSION" == "3.x" ]]; then
+    DEVICE_SUFFIX="iphone"
 else
-    lipo -create "./bin/lib$1.x86_64-simulator.$2.a" \
-        "./bin/lib$1.armv7-ios.$2.a" \
-        "./bin/lib$1.arm64-ios.$2.a" \
-        -output "./bin/$1.$2.a"
+    DEVICE_SUFFIX="ios"
 fi
+
+# Device slices
+scons target=$TARGET arch=arm64 plugin=$PLUGIN version=$VERSION
+if [[ "$VERSION" == "3.x" ]]; then
+    # armv7 only needed for Godot 3.x / 32-bit devices; iOS 26 SDK dropped 32-bit support
+    scons target=$TARGET arch=armv7 plugin=$PLUGIN version=$VERSION
+fi
+
+# Simulator slices (arm64 for Apple Silicon Macs, x86_64 for Intel)
+scons target=$TARGET arch=arm64 simulator=yes plugin=$PLUGIN version=$VERSION
+scons target=$TARGET arch=x86_64 simulator=yes plugin=$PLUGIN version=$VERSION
+
+# Fat device library
+if [[ "$VERSION" == "3.x" ]]; then
+    lipo -create \
+        "./bin/lib${PLUGIN}.arm64-${DEVICE_SUFFIX}.${TARGET}.a" \
+        "./bin/lib${PLUGIN}.armv7-${DEVICE_SUFFIX}.${TARGET}.a" \
+        -output "./bin/${PLUGIN}.device.${TARGET}.a"
+else
+    # Godot 4.x — arm64 only, no armv7
+    cp "./bin/lib${PLUGIN}.arm64-${DEVICE_SUFFIX}.${TARGET}.a" \
+       "./bin/${PLUGIN}.device.${TARGET}.a"
+fi
+
+# Fat simulator library (arm64-simulator + x86_64-simulator)
+lipo -create \
+    "./bin/lib${PLUGIN}.arm64-simulator.${TARGET}.a" \
+    "./bin/lib${PLUGIN}.x86_64-simulator.${TARGET}.a" \
+    -output "./bin/${PLUGIN}.simulator.${TARGET}.a"
+
+# XCFramework — bundles device and simulator with correct platform tags
+# so Xcode can link the right slice without conflict
+rm -rf "./bin/${PLUGIN}.${TARGET}.xcframework"
+xcodebuild -create-xcframework \
+    -library "./bin/${PLUGIN}.device.${TARGET}.a" \
+    -library "./bin/${PLUGIN}.simulator.${TARGET}.a" \
+    -output "./bin/${PLUGIN}.${TARGET}.xcframework"
 
 cd ..

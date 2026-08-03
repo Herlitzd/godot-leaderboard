@@ -36,7 +36,7 @@ for version in "${BUILD_VERSIONS[@]}"; do
     # Compile Plugin
     ./scripts/ios/generate_static_library.sh $PLUGIN release $MAJOR_VERSION
     ./scripts/ios/generate_static_library.sh $PLUGIN release_debug $MAJOR_VERSION
-    mv ./ios/bin/${PLUGIN}.release_debug.a ./ios/bin/${PLUGIN}.debug.a
+    mv ./ios/bin/${PLUGIN}.release_debug.xcframework ./ios/bin/${PLUGIN}.debug.xcframework
 
     # Move to release folder
     rm -rf $BUILDED_FOLDER
@@ -45,7 +45,8 @@ for version in "${BUILD_VERSIONS[@]}"; do
     mkdir -p $BUILDED_FOLDER/${PLUGIN}
 
     # Move Plugin
-    mv ./ios/bin/${PLUGIN}.{release,debug}.a $BUILDED_FOLDER/${PLUGIN}
+    mv ./ios/bin/${PLUGIN}.release.xcframework $BUILDED_FOLDER/${PLUGIN}/${PLUGIN}.xcframework
+    mv ./ios/bin/${PLUGIN}.debug.xcframework $BUILDED_FOLDER/${PLUGIN}/${PLUGIN}.debug.xcframework
     cp ./ios/plugin/${PLUGIN}.gdip $BUILDED_FOLDER/${PLUGIN}
 
     # Pack the plugin to zip file

@@ -1,6 +1,6 @@
 [config]
 name="Leaderboard"
-binary="leaderboard.a"
+binary="leaderboard.xcframework"
 
 initialization="register_leaderboard_types"
 deinitialization="unregister_leaderboard_types"

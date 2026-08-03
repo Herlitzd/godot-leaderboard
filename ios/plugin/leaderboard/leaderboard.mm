@@ -266,7 +266,7 @@ void Leaderboard::game_center_closed() {
 void Leaderboard::load_activities() {
 #ifdef __IPHONE_26_0
     if (@available(iOS 26.0, *)) {
-        [GKGameActivityDefinition loadDefinitionsWithCompletionHandler:^(NSArray<GKGameActivityDefinition *> *definitions, NSError *error) {
+        [GKGameActivityDefinition loadGameActivityDefinitionsWithCompletionHandler:^(NSArray<GKGameActivityDefinition *> *definitions, NSError *error) {
             if (error || !definitions) {
                 emit_signal("on_activity_error", "ERROR_ACTIVITY_LOAD_FAILED");
                 return;
@@ -367,7 +367,7 @@ void Leaderboard::resume_activity() {
 #ifdef __IPHONE_26_0
     if (@available(iOS 26.0, *)) {
         if (currentActivity) {
-            [(GKGameActivity *)currentActivity start];
+            [(GKGameActivity *)currentActivity resume];
         }
         return;
     }

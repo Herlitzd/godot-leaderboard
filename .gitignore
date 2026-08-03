@@ -1,4 +1,10 @@
 .DS_Store
-.release
-.cache
+.release/
+.cache/
 .sconsign.dblite
+
+# SCons build intermediates
+ios/bin/
+ios/godot/
+*.o
+*.d
