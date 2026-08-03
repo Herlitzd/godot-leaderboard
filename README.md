@@ -118,30 +118,34 @@ void show(leaderboard_id: String) # Show leaderboard
 ## Signals
 
 ```gdscript
-signal on_error(error_code) # Leaderboard request failed, returning error_code
-signal on_completed() # Leaderboard request displayed and completed
-
-
 signal on_authenticated(is_authenticated: bool) # Return authenticated status
 signal on_leaderboard_error(error_code: String) # Throw error, view error codes
 signal on_leaderboard_event(event_code: String) # Throw event, check event codes
 signal on_high_score_fetched(highscore: int) # Return highscore, in case player remove and reinstall the game, we should update ingame's highscore to match leaderboard's highscore
-
+signal on_leaderboard_closed() # iOS only — emitted when the Game Center leaderboard UI is dismissed
 ```
 
 ## Error Codes
 
-> `ERROR_INIT`
+> `ERROR_INIT_NO_CLASS`
 
-Leader board init error, you should check
+iOS only — GameKit is not linked. Make sure `GameCenter` capability is added in Xcode.
+
+> `ERROR_INIT_NO_SELECTOR`
+
+iOS only — `GKLocalPlayer` does not respond to `authenticateHandler`. Check your iOS deployment target and GameKit setup.
+
+> `ERROR_INIT_NO_ROOT`
+
+iOS only — could not find a root view controller to present the sign-in sheet. This can happen if sign-in is called too early before the window hierarchy is ready.
 
 > `ERROR_FETCH_HIGHSCORE_FAILED`
 
 Fetch highscore error, either your leaderboard_id is wrong or your leaderboard setup is not correct
 
-> `ERROR_UNAVAILABLE`
+> `PLAYER_NO_SCORE`
 
-Submit highscore error, either your leaderboard_id is wrong or your leaderboard setup is not correct
+iOS only — the local player has no score recorded on this leaderboard yet.
 
 > `ERROR_CANT_SHOW_LEADERBOARD`
 
@@ -149,7 +153,7 @@ Show leaderboard failed, you should check for your leaderboard, credentials (And
 
 > `ERROR_NO_CENTER_CONTROLLER`
 
-iOS only, you may forget to add GameCenter Capability
+iOS only — you may have forgotten to add the GameCenter capability in Xcode
 
 
 ## Event Codes

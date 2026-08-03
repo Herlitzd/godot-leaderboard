@@ -39,6 +39,7 @@ void Leaderboard::_bind_methods() {
     ADD_SIGNAL(MethodInfo("on_leaderboard_event", PropertyInfo(Variant::STRING, "event_code")));
     ADD_SIGNAL(MethodInfo("on_authenticated", PropertyInfo(Variant::BOOL, "is_authenticated")));
     ADD_SIGNAL(MethodInfo("on_high_score_fetched", PropertyInfo(Variant::INT, "highscore")));
+    ADD_SIGNAL(MethodInfo("on_leaderboard_closed"));
 
     ClassDB::bind_method("isAuthenticated", &Leaderboard::isAuthenticated);
     ClassDB::bind_method("signIn", &Leaderboard::signIn);
@@ -192,5 +193,5 @@ void Leaderboard::show(const String &leaderboard_id) {
 }
 
 void Leaderboard::game_center_closed() {
-    // Tùy biến xử lý khi đóng cửa sổ
+    emit_signal("on_leaderboard_closed");
 }

@@ -4,6 +4,7 @@ signal on_authenticated(is_authenticated: bool)
 signal on_leaderboard_error(error_code: String)
 signal on_leaderboard_event(event_code: String)
 signal on_high_score_fetched(highscore: int)
+signal on_leaderboard_closed()
 
 var leaderboard: Object = null
 
@@ -35,6 +36,10 @@ func init_signals() -> void:
 	leaderboard.on_high_score_fetched.connect(func(highscore: int) -> void:
 		if highscore is int and highscore > 0:
 			on_high_score_fetched.emit(highscore)
+	)
+
+	leaderboard.on_leaderboard_closed.connect(func() -> void:
+		on_leaderboard_closed.emit()
 	)
 
 
