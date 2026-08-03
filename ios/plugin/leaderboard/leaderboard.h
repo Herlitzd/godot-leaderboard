@@ -22,14 +22,22 @@ class Leaderboard : public Object {
 
 public:
     // ĐÃ SỬA: Đổi từ BOOL (Objective-C) sang bool (C++ chuẩn) để tránh lỗi compiler
-    bool isAuthenticated(); 
-    
+    bool isAuthenticated();
+
     void signIn();
     void fetchHighScore(const String &leaderboard_id);
     void submitHighScore(const String &leaderboard_id, const int &score);
     void show(const String &leaderboard_id);
 
     void game_center_closed();
+
+    void load_activities();
+    void start_activity(const String &activity_id);
+    void start_activity_with_code(const String &activity_id, const String &party_code);
+    void end_activity();
+    void pause_activity();
+    void resume_activity();
+    String get_activity_party_code();
 
     static Leaderboard *get_singleton();
     

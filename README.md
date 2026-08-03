@@ -113,6 +113,15 @@ void fetchHighScore(leaderboard_id: String) # Fetch user highscore (must signed 
 void submitHighScore(leaderboard_id: String, score: int) # Submit user highscore (must signed in)
 
 void show(leaderboard_id: String) # Show leaderboard
+
+# Game Activities — iOS 26+ only. All methods are safe to call on earlier versions (no-op or error signal).
+void load_activities()                                          # Load activity definitions from App Store Connect
+void start_activity(activity_id: String)                       # Start an activity session by ID
+void start_activity_with_code(activity_id: String, party_code: String) # Join an activity via shared party code
+void end_activity()                                            # End the current activity session
+void pause_activity()                                          # Pause the current activity session
+void resume_activity()                                         # Resume a paused activity session
+String get_activity_party_code()                               # Get the party code for the current activity
 ```
 
 ## Signals
@@ -123,6 +132,12 @@ signal on_leaderboard_error(error_code: String) # Throw error, view error codes
 signal on_leaderboard_event(event_code: String) # Throw event, check event codes
 signal on_high_score_fetched(highscore: int) # Return highscore, in case player remove and reinstall the game, we should update ingame's highscore to match leaderboard's highscore
 signal on_leaderboard_closed() # iOS only — emitted when the Game Center leaderboard UI is dismissed
+
+# iOS only, requires iOS 26+. No-op on earlier versions.
+signal on_activities_loaded(activities: Dictionary)          # {activity_id: title} after load_activities()
+signal on_activity_wants_to_play(activity_id: String, party_code: String, properties: Dictionary) # Game Center deep link
+signal on_activity_started(activity_id: String, party_code: String) # activity started successfully
+signal on_activity_error(error_code: String)                # see error codes
 ```
 
 ## Error Codes
@@ -154,6 +169,22 @@ Show leaderboard failed, you should check for your leaderboard, credentials (And
 > `ERROR_NO_CENTER_CONTROLLER`
 
 iOS only — you may have forgotten to add the GameCenter capability in Xcode
+
+> `ERROR_ACTIVITY_UNSUPPORTED`
+
+iOS only — the device is running iOS 25 or earlier. Game Activities require iOS 26+.
+
+> `ERROR_ACTIVITY_LOAD_FAILED`
+
+Failed to load activity definitions from App Store Connect. Check your network connection and that activities are configured and approved in App Store Connect.
+
+> `ERROR_ACTIVITY_NOT_FOUND`
+
+The activity ID passed to `start_activity` or `start_activity_with_code` was not found in the loaded definitions. Call `load_activities()` first.
+
+> `ERROR_ACTIVITY_START_FAILED`
+
+Game Center rejected the activity start request. The definition may be in a non-live release state, or the party code may be invalid.
 
 
 ## Event Codes
