@@ -8,3 +8,6 @@ ios/bin/
 ios/godot/
 *.o
 *.d
+
+# Godot 4 generates these next to each script
+*.uid
