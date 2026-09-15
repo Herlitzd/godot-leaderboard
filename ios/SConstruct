@@ -150,7 +150,7 @@ elif env['version'] == '4.0':
     else:
         env.Prepend(CXXFLAGS=[
             '-O2', '-ftree-vectorize',
-            '-DNDEBUG', '-DNS_BLOCK_ASSERTIONS=1', '-DDEBUG_ENABLED',
+            '-DNDEBUG', '-DNS_BLOCK_ASSERTIONS=1',
         ])
 
         if env['arch'] != 'armv7':
